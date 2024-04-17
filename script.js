@@ -8,6 +8,7 @@ let candy = [];
 let numCandy = 8;
 let snake = [];
 let d = 'RIGHT';
+let topScores = JSON.parse(localStorage.getItem('topScores')) || [0, 0, 0];
 let gameSpeed = 150;
 canvas.width = canvasSize;
 canvas.height = canvasSize;
@@ -21,8 +22,23 @@ for (let i = 0; i < numCandy; i++) {
     });
 }
 
-
 document.addEventListener('keydown', direction);
+
+document.getElementById('btn2').addEventListener('click', function() {
+  if ( d != 'DOWN') { d = 'UP' };
+});
+
+document.getElementById('btn4').addEventListener('click', function() {
+  if ( d != 'RIGHT' ) { d = 'LEFT' };
+});
+
+document.getElementById('btn6').addEventListener('click', function() {
+    if ( d != 'LEFT' ) { d = 'RIGHT' };
+});
+
+document.getElementById('btn8').addEventListener('click', function() {
+    if ( d != 'UP' ) { d = 'DOWN' };
+});
 
 function direction(event) {
     if (event.keyCode == 37 && d != 'RIGHT') {
@@ -62,8 +78,8 @@ function draw() {
 
     for (let i = 0; i < candy.length; i++) {
       if (snakeX == candy[i].x && snakeY == candy[i].y) {
-          score++;
           ateCandy = true;
+          score++;
           candy.splice(i, 1); // remove the eaten candy item
           candy.push({ // add a new candy item
               x: Math.floor(Math.random() * canvasSize / box) * box,
@@ -75,6 +91,12 @@ function draw() {
 
     if (!ateCandy) {
         snake.pop();
+    } else {
+        if (score % 5 === 0 && gameSpeed > 25) { // check if 5 candies have been eaten and the gameSpeed is above a certain limit
+            clearInterval(game); // clear the existing interval
+            gameSpeed -= 25; // decrease the gameSpeed
+            game = setInterval(draw, gameSpeed); // start a new interval with the new gameSpeed
+        }
     }
 
     let newHead = {
@@ -82,15 +104,20 @@ function draw() {
         y: snakeY
     };
 
-    if (snakeX < 0 || snakeY < 0 || snakeX > canvasSize * box || snakeY > canvasSize * box || collision(newHead, snake)) {
-        clearInterval(game);
+ if (snakeX < 0 || snakeY < 0 || snakeX > canvasSize * box || snakeY > canvasSize * box || collision(newHead, snake)) {
+    clearInterval(game);
+    let minScoreIndex = topScores.indexOf(Math.min(...topScores));
+    if (score > topScores[minScoreIndex]) {
+        topScores[minScoreIndex] = score;
+        topScores.sort((a, b) => b - a);
     }
+    localStorage.setItem('topScores', JSON.stringify(topScores));
+    alert(`Game Over\nYour score: ${score}\nTop scores: ${topScores.join(', ')}`);
+}
 
     snake.unshift(newHead);
+    document.getElementById('score').innerText = 'Score: ' + score;
 
-    context.fillStyle = 'black';
-    context.font = '20px Arial';
-    context.fillText('Score: ' + score, box, box);
 }
 
 function collision(head, array) {
